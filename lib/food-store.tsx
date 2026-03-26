@@ -12,7 +12,11 @@ import { getFoodStatus } from "@/lib/food-status";
 import type { DiscardLog } from "@/lib/discard-log";
 import type { ConsumeLog } from "@/lib/consume-log";
 import { recordExpiryHistory } from "@/lib/expiry-history";
-import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabase";
+import {
+  getSupabaseClient,
+  getSupabaseEnvDebugInfo,
+  hasSupabaseEnv,
+} from "@/lib/supabase";
 
 export type NewFoodInput = Omit<Food, "id">;
 export type NewStorageSpaceInput = Omit<StorageSpace, "id">;
@@ -120,7 +124,7 @@ function getErrorMessage(error: unknown, fallback: string) {
     error instanceof TypeError &&
     /(load failed|fetch failed|network)/i.test(error.message)
   ) {
-    return "Supabase 서버에 연결하지 못했어요. .env.local의 NEXT_PUBLIC_SUPABASE_URL 값을 Supabase 대시보드의 프로젝트 URL로 다시 확인해주세요.";
+    return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY와 네트워크 요청 상태를 확인해주세요.";
   }
 
   if (
@@ -136,7 +140,7 @@ function getErrorMessage(error: unknown, fallback: string) {
       code?: unknown;
     };
     if (/(load failed|fetch failed|network)/i.test(supabaseError.message)) {
-      return "Supabase 서버에 연결하지 못했어요. .env.local의 NEXT_PUBLIC_SUPABASE_URL 값을 Supabase 대시보드의 프로젝트 URL로 다시 확인해주세요.";
+      return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY와 네트워크 요청 상태를 확인해주세요.";
     }
     const details =
       typeof supabaseError.details === "string" && supabaseError.details
@@ -171,8 +175,9 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
   async function refreshData() {
     if (!hasSupabaseEnv()) {
+      console.error("refreshData missing env", getSupabaseEnvDebugInfo());
       setError(
-        "Supabase 환경변수가 설정되지 않았어요. .env.local 값을 먼저 확인해주세요.",
+        "Supabase 환경변수가 설정되지 않았어요. Vercel 또는 .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 값을 확인해주세요.",
       );
       setIsLoading(false);
       return;
@@ -220,7 +225,11 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       );
       setError("");
     } catch (nextError) {
-      console.error("refreshData error", nextError);
+      console.error("refreshData error", {
+        env: getSupabaseEnvDebugInfo(),
+        tables: ["storage_spaces", "food_items", "discard_logs"],
+        error: nextError,
+      });
       setError(
         getErrorMessage(nextError, "Supabase 데이터를 불러오는 중 문제가 생겼어요."),
       );
@@ -267,6 +276,18 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true, data: newFood };
     } catch (nextError) {
+      console.error("addFood error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "food_items",
+        payload: {
+          name: input.name.trim(),
+          quantity: input.quantity,
+          unit: input.unit.trim(),
+          expiry_date: input.expiryDate,
+          storage_space_id: input.storageSpaceId,
+        },
+        error: nextError,
+      });
       const message = getErrorMessage(nextError, "식품 저장 중 문제가 생겼어요.");
       setError(message);
       return { ok: false, message };
@@ -317,6 +338,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true, data: nextFood };
     } catch (nextError) {
+      console.error("updateFood error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "food_items",
+        foodId,
+        payload: updates,
+        error: nextError,
+      });
       const message = getErrorMessage(nextError, "식품 수정 중 문제가 생겼어요.");
       setError(message);
       return { ok: false, message };
@@ -339,6 +367,12 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true };
     } catch (nextError) {
+      console.error("removeFood error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "food_items",
+        foodId,
+        error: nextError,
+      });
       const message = getErrorMessage(nextError, "식품 삭제 중 문제가 생겼어요.");
       setError(message);
       return { ok: false, message };
@@ -383,6 +417,11 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true };
     } catch (nextError) {
+      console.error("consumeFood error", {
+        env: getSupabaseEnvDebugInfo(),
+        foodId,
+        error: nextError,
+      });
       const message = getErrorMessage(
         nextError,
         "소비완료 처리 중 문제가 생겼어요.",
@@ -438,6 +477,12 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true };
     } catch (nextError) {
+      console.error("discardFood error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "discard_logs",
+        foodId,
+        error: nextError,
+      });
       const message = getErrorMessage(nextError, "폐기 처리 중 문제가 생겼어요.");
       setError(message);
       return { ok: false, message };
@@ -465,6 +510,8 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       return { ok: true, data: newStorageSpace };
     } catch (nextError) {
       console.error("addStorageSpace error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "storage_spaces",
         payload: { name: input.name.trim() },
         error: nextError,
       });
@@ -506,6 +553,8 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       return { ok: true, data: nextStorageSpace };
     } catch (nextError) {
       console.error("updateStorageSpace error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "storage_spaces",
         storageSpaceId,
         payload: updates,
         error: nextError,
@@ -547,6 +596,8 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       return { ok: true };
     } catch (nextError) {
       console.error("removeStorageSpace error", {
+        env: getSupabaseEnvDebugInfo(),
+        table: "storage_spaces",
         storageSpaceId,
         error: nextError,
       });
