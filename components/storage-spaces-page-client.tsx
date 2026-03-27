@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
 import { SectionHeader } from "@/components/section-header";
@@ -14,6 +15,7 @@ export function StorageSpacesPageClient() {
     storageSpaces,
     addStorageSpace,
     updateStorageSpace,
+    reorderStorageSpaces,
     removeStorageSpace,
     isLoading,
     error,
@@ -22,6 +24,8 @@ export function StorageSpacesPageClient() {
   const [editingStorageSpaceId, setEditingStorageSpaceId] = useState("");
   const [editingName, setEditingName] = useState("");
   const [message, setMessage] = useState("");
+  const [reorderMessage, setReorderMessage] = useState("");
+  const [isReorderPending, setIsReorderPending] = useState(false);
   const [dialogState, setDialogState] = useState<{
     type: "create" | "update" | "delete";
     storageSpaceId?: string;
@@ -41,6 +45,7 @@ export function StorageSpacesPageClient() {
     setEditingStorageSpaceId(storageSpaceId);
     setEditingName(currentName);
     setMessage("");
+    setReorderMessage("");
   }
 
   function handleUpdateStorageSpace(storageSpaceId: string) {
@@ -54,6 +59,22 @@ export function StorageSpacesPageClient() {
 
   function handleRemoveStorageSpace(storageSpaceId: string) {
     setDialogState({ type: "delete", storageSpaceId });
+  }
+
+  async function handleMoveStorageSpace(
+    storageSpaceId: string,
+    direction: "up" | "down",
+  ) {
+    setIsReorderPending(true);
+    const result = await reorderStorageSpaces(storageSpaceId, direction);
+    setIsReorderPending(false);
+
+    if (!result.ok) {
+      setReorderMessage(result.message ?? "보관공간 순서를 바꾸지 못했어요.");
+      return;
+    }
+
+    setReorderMessage("");
   }
 
   async function handleConfirmStorageSpaceAction() {
@@ -167,12 +188,22 @@ export function StorageSpacesPageClient() {
           title="보관공간 리스트"
           subtitle="공간이 늘어나도 같은 UI 구조로 확장됩니다"
         />
+        {reorderMessage ? (
+          <div className="rounded-2xl border border-[#ffd7d7] bg-[#fff4f4] px-4 py-3 text-sm text-[var(--color-today)]">
+            {reorderMessage}
+          </div>
+        ) : null}
         <div className="space-y-3">
           {storageSpaces.map((space) => {
             const items = getSortedFoodsByUrgency(
               foods.filter((food) => food.storageSpaceId === space.id),
             );
             const mostUrgentFood = items[0] ?? null;
+            const currentIndex = storageSpaces.findIndex(
+              (currentSpace) => currentSpace.id === space.id,
+            );
+            const canMoveUp = currentIndex > 0;
+            const canMoveDown = currentIndex < storageSpaces.length - 1;
 
             return (
               <article
@@ -272,6 +303,22 @@ export function StorageSpacesPageClient() {
                     className="rounded-full bg-[#fff3f3] px-3 py-2 text-xs font-semibold text-[var(--color-today)] hover:-translate-y-0.5"
                   >
                     삭제
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoveStorageSpace(space.id, "up")}
+                    disabled={!canMoveUp || isReorderPending}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface-soft)] text-[var(--color-mint-deep)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronUp size={16} strokeWidth={2.2} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoveStorageSpace(space.id, "down")}
+                    disabled={!canMoveDown || isReorderPending}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface-soft)] text-[var(--color-mint-deep)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronDown size={16} strokeWidth={2.2} />
                   </button>
                 </div>
               </article>

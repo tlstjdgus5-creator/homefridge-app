@@ -19,7 +19,9 @@ import {
 } from "@/lib/supabase";
 
 export type NewFoodInput = Omit<Food, "id">;
-export type NewStorageSpaceInput = Omit<StorageSpace, "id">;
+export type NewStorageSpaceInput = {
+  name: string;
+};
 
 type StoreActionResult<T = void> = {
   ok: boolean;
@@ -50,6 +52,10 @@ type FoodStoreValue = {
     storageSpaceId: string,
     updates: Partial<NewStorageSpaceInput>,
   ) => Promise<StoreActionResult<StorageSpace>>;
+  reorderStorageSpaces: (
+    storageSpaceId: string,
+    direction: "up" | "down",
+  ) => Promise<StoreActionResult>;
   removeStorageSpace: (storageSpaceId: string) => Promise<{
     ok: boolean;
     message?: string;
@@ -71,6 +77,7 @@ type FoodItemRow = {
 type StorageSpaceRow = {
   id: string;
   name: string;
+  display_order: number | null;
   created_at?: string;
 };
 
@@ -88,6 +95,28 @@ type DiscardLogRow = {
 
 const FoodStoreContext = createContext<FoodStoreValue | null>(null);
 
+function isMissingDisplayOrderColumnError(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string" &&
+    /(display_order).*(storage_spaces)|(storage_spaces).*(display_order)/i.test(
+      (error as { message: string }).message,
+    )
+  ) {
+    return true;
+  }
+
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    ((error as { code?: unknown }).code === "42703" ||
+      (error as { code?: unknown }).code === "PGRST204")
+  );
+}
+
 function mapFoodRowToFood(row: FoodItemRow): Food {
   return {
     id: row.id,
@@ -103,7 +132,12 @@ function mapStorageSpaceRow(row: StorageSpaceRow): StorageSpace {
   return {
     id: row.id,
     name: row.name,
+    displayOrder: row.display_order ?? Number.MAX_SAFE_INTEGER,
   };
+}
+
+function sortStorageSpaces(items: StorageSpace[]) {
+  return [...items].sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 function mapDiscardLogRow(row: DiscardLogRow): DiscardLog {
@@ -218,7 +252,8 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       const [storageSpacesResult, foodsResult, discardLogsResult] = await Promise.all([
         client
           .from("storage_spaces")
-          .select("id, name, created_at")
+          .select("id, name, display_order, created_at")
+          .order("display_order", { ascending: true })
           .order("created_at", { ascending: true }),
         client
           .from("food_items")
@@ -232,19 +267,39 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
           .order("discarded_at", { ascending: false }),
       ]);
 
-      if (storageSpacesResult.error) {
+      let storageSpacesData = (storageSpacesResult.data ?? []) as StorageSpaceRow[];
+
+      if (
+        storageSpacesResult.error &&
+        isMissingDisplayOrderColumnError(storageSpacesResult.error)
+      ) {
+        console.warn("[food-store] display_order column missing, fallback to created_at order");
+        const fallbackStorageSpacesResult = await client
+          .from("storage_spaces")
+          .select("id, name, created_at")
+          .order("created_at", { ascending: true });
+        storageSpacesData = (fallbackStorageSpacesResult.data ?? []).map(
+          (row, index) =>
+            ({
+              ...(row as Omit<StorageSpaceRow, "display_order">),
+              display_order: index,
+            }) as StorageSpaceRow,
+        );
+      } else if (storageSpacesResult.error) {
         logSupabaseActionError({
           action: "refreshData",
           stage: "storage_spaces.select",
           tables: ["storage_spaces"],
           details: {
             failedTable: "storage_spaces",
-            query: "select id, name, created_at order by created_at asc",
+            query:
+              "select id, name, display_order, created_at order by display_order asc, created_at asc",
           },
           error: storageSpacesResult.error,
         });
         throw storageSpacesResult.error;
       }
+
       if (foodsResult.error) {
         logSupabaseActionError({
           action: "refreshData",
@@ -275,8 +330,14 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       }
 
       setStorageSpaces(
-        ((storageSpacesResult.data ?? []) as StorageSpaceRow[]).map(
-          mapStorageSpaceRow,
+        sortStorageSpaces(
+          storageSpacesData.map(
+            (row, index) =>
+              mapStorageSpaceRow({
+                ...row,
+                display_order: row.display_order ?? index,
+              }),
+          ),
         ),
       );
       setFoods(((foodsResult.data ?? []) as FoodItemRow[]).map(mapFoodRowToFood));
@@ -603,20 +664,49 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
   async function addStorageSpace(
     input: NewStorageSpaceInput,
   ): Promise<StoreActionResult<StorageSpace>> {
+    const nextDisplayOrder =
+      storageSpaces.length > 0
+        ? Math.max(...storageSpaces.map((space) => space.displayOrder)) + 1
+        : 0;
+
     try {
       const client = getSupabaseClient();
       const { data, error: insertError } = await client
         .from("storage_spaces")
-        .insert({ name: input.name.trim() })
-        .select("id, name, created_at")
+        .insert({
+          name: input.name.trim(),
+          display_order: nextDisplayOrder,
+        })
+        .select("id, name, display_order, created_at")
         .single();
 
-      if (insertError) {
-        throw insertError;
+      let nextRow = data as StorageSpaceRow | null;
+      let nextInsertError = insertError;
+
+      if (insertError && isMissingDisplayOrderColumnError(insertError)) {
+        const fallbackResult = await client
+          .from("storage_spaces")
+          .insert({ name: input.name.trim() })
+          .select("id, name, created_at")
+          .single();
+        nextRow = fallbackResult.data
+          ? ({
+              ...(fallbackResult.data as Omit<StorageSpaceRow, "display_order">),
+              display_order: nextDisplayOrder,
+            } as StorageSpaceRow)
+          : null;
+        nextInsertError = fallbackResult.error;
       }
 
-      const newStorageSpace = mapStorageSpaceRow(data as StorageSpaceRow);
-      setStorageSpaces((current) => [...current, newStorageSpace]);
+      if (nextInsertError) {
+        throw nextInsertError;
+      }
+
+      const newStorageSpace = mapStorageSpaceRow({
+        ...(nextRow as StorageSpaceRow),
+        display_order: (nextRow as StorageSpaceRow).display_order ?? nextDisplayOrder,
+      });
+      setStorageSpaces((current) => sortStorageSpaces([...current, newStorageSpace]));
       setError("");
       return { ok: true, data: newStorageSpace };
     } catch (nextError) {
@@ -625,7 +715,10 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
         stage: "storage_spaces.insert",
         tables: ["storage_spaces"],
         details: {
-          payload: { name: input.name.trim() },
+          payload: {
+            name: input.name.trim(),
+            display_order: nextDisplayOrder,
+          },
         },
         error: nextError,
       });
@@ -650,17 +743,51 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
           ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
         })
         .eq("id", storageSpaceId)
-        .select("id, name, created_at")
+        .select("id, name, display_order, created_at")
         .single();
 
-      if (updateError) {
-        throw updateError;
+      let nextRow = data as StorageSpaceRow | null;
+      let nextUpdateError = updateError;
+
+      if (updateError && isMissingDisplayOrderColumnError(updateError)) {
+        const fallbackResult = await client
+          .from("storage_spaces")
+          .update({
+            ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+          })
+          .eq("id", storageSpaceId)
+          .select("id, name, created_at")
+          .single();
+        nextRow = fallbackResult.data
+          ? ({
+              ...(fallbackResult.data as Omit<StorageSpaceRow, "display_order">),
+              display_order:
+                storageSpaces.find((space) => space.id === storageSpaceId)
+                  ?.displayOrder ?? 0,
+            } as StorageSpaceRow)
+          : null;
+        nextUpdateError = fallbackResult.error;
       }
 
-      const nextStorageSpace = mapStorageSpaceRow(data as StorageSpaceRow);
+      if (nextUpdateError) {
+        throw nextUpdateError;
+      }
+
+      const currentStorageSpace = storageSpaces.find(
+        (space) => space.id === storageSpaceId,
+      );
+      const nextStorageSpace = mapStorageSpaceRow({
+        ...(nextRow as StorageSpaceRow),
+        display_order:
+          (nextRow as StorageSpaceRow).display_order ??
+          currentStorageSpace?.displayOrder ??
+          0,
+      });
       setStorageSpaces((current) =>
-        current.map((space) =>
-          space.id === storageSpaceId ? nextStorageSpace : space,
+        sortStorageSpaces(
+          current.map((space) =>
+            space.id === storageSpaceId ? nextStorageSpace : space,
+          ),
         ),
       );
       setError("");
@@ -679,6 +806,83 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       const message = getErrorMessage(
         nextError,
         "보관공간 수정 중 문제가 생겼어요.",
+      );
+      setError(message);
+      return { ok: false, message };
+    }
+  }
+
+  async function reorderStorageSpaces(
+    storageSpaceId: string,
+    direction: "up" | "down",
+  ): Promise<StoreActionResult> {
+    const currentSpaces = sortStorageSpaces(storageSpaces);
+    const currentIndex = currentSpaces.findIndex(
+      (space) => space.id === storageSpaceId,
+    );
+
+    if (currentIndex === -1) {
+      return { ok: false, message: "보관공간 정보를 찾을 수 없어요." };
+    }
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= currentSpaces.length) {
+      return { ok: false, message: "더 이상 이동할 수 없어요." };
+    }
+
+    const reordered = [...currentSpaces];
+    const [movedSpace] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, movedSpace);
+
+    const payload = reordered.map((space, index) => ({
+      id: space.id,
+      display_order: index,
+    }));
+
+    try {
+      const client = getSupabaseClient();
+      for (const item of payload) {
+        const { error: updateError } = await client
+          .from("storage_spaces")
+          .update({ display_order: item.display_order })
+          .eq("id", item.id);
+
+        if (updateError) {
+          if (isMissingDisplayOrderColumnError(updateError)) {
+            return {
+              ok: false,
+              message:
+                "보관공간 순서 변경을 쓰려면 먼저 storage_spaces.display_order 컬럼을 추가해야 해요.",
+            };
+          }
+          throw updateError;
+        }
+      }
+
+      setStorageSpaces(
+        reordered.map((space, index) => ({
+          ...space,
+          displayOrder: index,
+        })),
+      );
+      setError("");
+      return { ok: true };
+    } catch (nextError) {
+      logSupabaseActionError({
+        action: "reorderStorageSpaces",
+        stage: "storage_spaces.update",
+        tables: ["storage_spaces"],
+        details: {
+          storageSpaceId,
+          direction,
+          payload,
+        },
+        error: nextError,
+      });
+      const message = getErrorMessage(
+        nextError,
+        "보관공간 순서를 변경하는 중 문제가 생겼어요.",
       );
       setError(message);
       return { ok: false, message };
@@ -745,6 +949,7 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
     removeDiscardLog,
     addStorageSpace,
     updateStorageSpace,
+    reorderStorageSpaces,
     removeStorageSpace,
     getStorageSpaceName: (storageSpaceId) =>
       storageSpaces.find((space) => space.id === storageSpaceId)?.name ?? "미분류",

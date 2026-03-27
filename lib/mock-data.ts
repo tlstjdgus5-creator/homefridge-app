@@ -10,6 +10,7 @@ export type Food = {
 export type StorageSpace = {
   id: string;
   name: string;
+  displayOrder: number;
 };
 
 export type Recipe = {
@@ -20,11 +21,11 @@ export type Recipe = {
 };
 
 export const storageSpaces: StorageSpace[] = [
-  { id: "fridge-top", name: "냉장실 상단" },
-  { id: "fridge-drawer", name: "야채칸" },
-  { id: "freezer", name: "냉동실" },
-  { id: "door", name: "문칸" },
-  { id: "pantry", name: "실온 보관" },
+  { id: "fridge-top", name: "냉장실 상단", displayOrder: 0 },
+  { id: "fridge-drawer", name: "야채칸", displayOrder: 1 },
+  { id: "freezer", name: "냉동실", displayOrder: 2 },
+  { id: "door", name: "문칸", displayOrder: 3 },
+  { id: "pantry", name: "실온 보관", displayOrder: 4 },
 ];
 
 export const foods: Food[] = [
