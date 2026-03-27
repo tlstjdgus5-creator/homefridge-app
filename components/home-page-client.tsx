@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
 import { SectionHeader } from "@/components/section-header";
 import { SummaryCard } from "@/components/summary-card";
 import { FoodCard } from "@/components/food-card";
@@ -30,7 +31,7 @@ export function HomePageClient() {
     .filter((space) => space.items.length > 0);
 
   return (
-    <div className="space-y-7 pb-40">
+    <div className="space-y-7 pb-56">
       {isLoading ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
           냉장고 데이터를 불러오는 중이에요.
@@ -175,12 +176,14 @@ export function HomePageClient() {
         </div>
       </section>
 
-      <Link
-        href="/foods/new"
-        className="fixed bottom-28 right-1/2 z-20 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] translate-x-1/2 rounded-2xl border border-[#8abda9] bg-[linear-gradient(135deg,#87bca9_0%,#72ac98_100%)] px-5 py-4 text-center text-base font-semibold text-white shadow-sm hover:-translate-y-0.5"
-      >
-        + 식품 추가
-      </Link>
+      <FixedBottomActionBar>
+        <Link
+          href="/foods/new"
+          className="flex w-full items-center justify-center rounded-2xl border border-[#8abda9] bg-[linear-gradient(135deg,#87bca9_0%,#72ac98_100%)] px-5 py-4 text-center text-base font-semibold text-white shadow-sm hover:-translate-y-0.5"
+        >
+          + 식품 추가
+        </Link>
+      </FixedBottomActionBar>
     </div>
   );
 }

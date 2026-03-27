@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
 import { FoodCard } from "@/components/food-card";
 import { SectionHeader } from "@/components/section-header";
 import { getSortedFoodsByUrgency } from "@/lib/food-status";
@@ -105,7 +106,7 @@ export function StorageSpaceDetailPageClient({
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-72">
       {isLoading ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
           공간 식품 정보를 불러오는 중이에요.
@@ -158,26 +159,28 @@ export function StorageSpaceDetailPageClient({
         )}
       </section>
 
-      <div className="sticky bottom-24 space-y-3">
-        <Link
-          href="/foods/new"
-          className="flex w-full items-center justify-center rounded-2xl bg-[var(--color-mint)] px-4 py-4 text-sm font-semibold text-white shadow-[var(--shadow-card)]"
-        >
-          + 식품 추가
-        </Link>
-        <Link
-          href="/"
-          className="flex w-full items-center justify-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 text-sm font-semibold text-[var(--color-mint-deep)] shadow-[var(--shadow-card)]"
-        >
-          홈으로 돌아가기
-        </Link>
-        <Link
-          href="/storage-spaces"
-          className="flex w-full items-center justify-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 text-sm font-semibold text-[var(--color-mint-deep)] shadow-[var(--shadow-card)]"
-        >
-          공간 목록으로 돌아가기
-        </Link>
-      </div>
+      <FixedBottomActionBar>
+        <div className="space-y-2.5">
+          <Link
+            href="/foods/new"
+            className="flex w-full items-center justify-center rounded-2xl bg-[var(--color-mint)] px-4 py-4 text-sm font-semibold text-white shadow-[var(--shadow-card)]"
+          >
+            + 식품 추가
+          </Link>
+          <Link
+            href="/"
+            className="flex w-full items-center justify-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 text-sm font-semibold text-[var(--color-mint-deep)] shadow-[var(--shadow-card)]"
+          >
+            홈으로 돌아가기
+          </Link>
+          <Link
+            href="/storage-spaces"
+            className="flex w-full items-center justify-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 text-sm font-semibold text-[var(--color-mint-deep)] shadow-[var(--shadow-card)]"
+          >
+            공간 목록으로 돌아가기
+          </Link>
+        </div>
+      </FixedBottomActionBar>
 
       <ConfirmationDialog
         open={dialogState !== null}

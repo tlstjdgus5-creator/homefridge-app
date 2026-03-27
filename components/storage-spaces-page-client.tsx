@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
 import { SectionHeader } from "@/components/section-header";
 import { getSortedFoodsByUrgency } from "@/lib/food-status";
 import { useFoodStore } from "@/lib/food-store";
@@ -111,7 +112,7 @@ export function StorageSpacesPageClient() {
   }
 
   return (
-    <div className="space-y-7 pb-32">
+    <div className="space-y-7 pb-56">
       {isLoading ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
           보관공간과 식품 정보를 불러오는 중이에요.
@@ -279,14 +280,14 @@ export function StorageSpacesPageClient() {
         </div>
       </section>
 
-      <div className="sticky bottom-24 z-10 pt-2">
+      <FixedBottomActionBar>
         <Link
           href="/foods/new"
           className="flex w-full items-center justify-center rounded-2xl border border-[#8abda9] bg-[linear-gradient(135deg,#87bca9_0%,#72ac98_100%)] px-4 py-4 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5"
         >
           + 식품 추가
         </Link>
-      </div>
+      </FixedBottomActionBar>
       <ConfirmationDialog
         open={dialogState !== null}
         title={
