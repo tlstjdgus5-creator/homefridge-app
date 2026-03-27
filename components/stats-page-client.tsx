@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { SectionHeader } from "@/components/section-header";
 import { SummaryCard } from "@/components/summary-card";
 import { getDaysUntilExpiry, getFoodStatusLabel } from "@/lib/food-status";
@@ -16,12 +18,32 @@ function formatDiscardedDate(value: string) {
 }
 
 export function StatsPageClient() {
-  const { discardLogs, consumeLogs, isLoading, error } = useFoodStore();
+  const { discardLogs, consumeLogs, isLoading, error, removeDiscardLog } =
+    useFoodStore();
   const stats = getDiscardStats(discardLogs, consumeLogs);
   const maxDailyDiscardCount = Math.max(
     1,
     ...stats.dailyDiscardCounts.map((item) => item.count),
   );
+  const [discardLogToDelete, setDiscardLogToDelete] = useState<{
+    id: string;
+    foodName: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDeleteDiscardLog() {
+    if (!discardLogToDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const result = await removeDiscardLog(discardLogToDelete.id);
+    setIsDeleting(false);
+
+    if (result.ok) {
+      setDiscardLogToDelete(null);
+    }
+  }
 
   return (
     <div className="space-y-6 pb-32">
@@ -194,9 +216,23 @@ export function StatsPageClient() {
                     <p className="text-sm font-semibold text-[var(--color-ink)]">
                       {item.foodName}
                     </p>
-                    <span className="text-xs text-[var(--color-muted)]">
-                      {formatDiscardedDate(item.discardedAt)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--color-muted)]">
+                        {formatDiscardedDate(item.discardedAt)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDiscardLogToDelete({
+                            id: item.id,
+                            foodName: item.foodName,
+                          })
+                        }
+                        className="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-1 text-sm text-[var(--color-muted)]">
                     {item.daysUntilExpiry > 0
@@ -266,9 +302,23 @@ export function StatsPageClient() {
                     <p className="text-sm font-semibold text-[var(--color-ink)]">
                       {item.foodName}
                     </p>
-                    <span className="text-xs text-[var(--color-muted)]">
-                      {formatDiscardedDate(item.discardedAt)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--color-muted)]">
+                        {formatDiscardedDate(item.discardedAt)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDiscardLogToDelete({
+                            id: item.id,
+                            foodName: item.foodName,
+                          })
+                        }
+                        className="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-1 text-sm text-[var(--color-muted)]">
                     {item.quantity}
@@ -287,6 +337,28 @@ export function StatsPageClient() {
           )}
         </div>
       </section>
+
+      <ConfirmationDialog
+        open={Boolean(discardLogToDelete)}
+        title="이 폐기내역을 삭제할까요?"
+        description={
+          discardLogToDelete
+            ? `${discardLogToDelete.foodName} 기록을 삭제하면 폐기 통계와 최근 기록에서도 바로 사라져요.`
+            : ""
+        }
+        confirmLabel="삭제하기"
+        cancelLabel="취소"
+        tone="danger"
+        isConfirming={isDeleting}
+        onCancel={() => {
+          if (!isDeleting) {
+            setDiscardLogToDelete(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleDeleteDiscardLog();
+        }}
+      />
     </div>
   );
 }

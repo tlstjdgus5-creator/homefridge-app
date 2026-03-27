@@ -42,6 +42,7 @@ type FoodStoreValue = {
   removeFood: (foodId: string) => Promise<StoreActionResult>;
   consumeFood: (foodId: string) => Promise<StoreActionResult>;
   discardFood: (foodId: string) => Promise<StoreActionResult>;
+  removeDiscardLog: (discardLogId: string) => Promise<StoreActionResult>;
   addStorageSpace: (
     input: NewStorageSpaceInput,
   ) => Promise<StoreActionResult<StorageSpace>>;
@@ -565,6 +566,40 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function removeDiscardLog(discardLogId: string): Promise<StoreActionResult> {
+    try {
+      const client = getSupabaseClient();
+      const { error: deleteError } = await client
+        .from("discard_logs")
+        .delete()
+        .eq("id", discardLogId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      setDiscardLogs((current) => current.filter((log) => log.id !== discardLogId));
+      setError("");
+      return { ok: true };
+    } catch (nextError) {
+      logSupabaseActionError({
+        action: "removeDiscardLog",
+        stage: "discard_logs.delete",
+        tables: ["discard_logs"],
+        details: {
+          discardLogId,
+        },
+        error: nextError,
+      });
+      const message = getErrorMessage(
+        nextError,
+        "폐기 내역 삭제 중 문제가 생겼어요.",
+      );
+      setError(message);
+      return { ok: false, message };
+    }
+  }
+
   async function addStorageSpace(
     input: NewStorageSpaceInput,
   ): Promise<StoreActionResult<StorageSpace>> {
@@ -707,6 +742,7 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
     removeFood,
     consumeFood,
     discardFood,
+    removeDiscardLog,
     addStorageSpace,
     updateStorageSpace,
     removeStorageSpace,

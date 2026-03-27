@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Gowun_Dodum, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { AppPinGateShell } from "@/components/app-pin-gate-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { FoodStoreProvider } from "@/lib/food-store";
 
@@ -45,12 +46,14 @@ export default function RootLayout({
       className={`${notoSansKr.variable} ${gowunDodum.variable} h-full`}
     >
       <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-ink)] antialiased">
-        <FoodStoreProvider>
-          <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white/75 shadow-[0_0_0_1px_rgba(148,163,184,0.08)] backdrop-blur">
-            <main className="flex-1 px-4 pb-28 pt-5">{children}</main>
-            <BottomNav />
-          </div>
-        </FoodStoreProvider>
+        <AppPinGateShell>
+          <FoodStoreProvider>
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white/75 shadow-[0_0_0_1px_rgba(148,163,184,0.08)] backdrop-blur">
+              <main className="flex-1 px-4 pb-28 pt-5">{children}</main>
+              <BottomNav />
+            </div>
+          </FoodStoreProvider>
+        </AppPinGateShell>
       </body>
     </html>
   );
