@@ -346,7 +346,6 @@ export function StatsPageClient() {
             ? `${discardLogToDelete.foodName} 기록을 삭제하면 폐기 통계와 최근 기록에서도 바로 사라져요.`
             : ""
         }
-        confirmLabel="삭제하기"
         cancelLabel="취소"
         tone="danger"
         isConfirming={isDeleting}

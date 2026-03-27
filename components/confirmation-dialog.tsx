@@ -28,8 +28,8 @@ export function ConfirmationDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(15,23,42,0.22)] px-4 pb-28 pt-10">
-      <div className="w-full max-w-md rounded-[28px] border border-[var(--color-line)] bg-white p-5 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.5)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(15,23,42,0.22)] px-4 py-6 backdrop-blur-[2px]">
+      <div className="w-full max-w-md rounded-[28px] border border-[var(--color-line)] bg-white p-5 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.5)] transition duration-200 ease-out motion-safe:animate-[dialog-pop_180ms_ease-out]">
         <p className="text-lg font-semibold text-[var(--color-ink)]">{title}</p>
         <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
           {description}

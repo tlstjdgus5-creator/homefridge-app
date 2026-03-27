@@ -24,7 +24,7 @@ const statusClassName = {
 };
 
 const actionButtonClassName =
-  "inline-flex min-h-10 min-w-[84px] items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition active:scale-95";
+  "inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl px-1.5 py-2.5 text-sm font-medium leading-5 tracking-normal shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition active:scale-95";
 
 export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
   const status = getFoodStatus(food);
@@ -66,42 +66,42 @@ export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
             : `${daysUntilExpiry}일 남았어요`}
       </p>
       {actions ? (
-        <div className="mt-5 overflow-x-auto">
-          {/* 액션은 한 줄로 고정해 터치 위치를 예측하기 쉽게 유지합니다. */}
-          <div className="flex min-w-max items-center gap-2.5">
-          <Link
-            href={`/foods/${food.id}/edit`}
-            className={`${actionButtonClassName} bg-[var(--color-bg-strong)] text-[var(--color-mint-deep)] hover:-translate-y-0.5`}
-          >
-            수정
-          </Link>
-          {actions.onConsume ? (
-            <button
-              type="button"
-              onClick={actions.onConsume}
-              className={`${actionButtonClassName} bg-[#effbf6] text-[var(--color-fresh)] hover:-translate-y-0.5`}
+        <div className="mt-5">
+          {/* 카드 폭 안에서 4개 액션을 같은 비율로 배치해 옆으로 넘치지 않게 유지합니다. */}
+          <div className="grid grid-cols-4 gap-1.5">
+            <Link
+              href={`/foods/${food.id}/edit`}
+              className={`${actionButtonClassName} bg-[var(--color-bg-strong)] text-[var(--color-mint-deep)] hover:-translate-y-0.5`}
             >
-              소비완료
-            </button>
-          ) : null}
-          {actions.onDiscard ? (
-            <button
-              type="button"
-              onClick={actions.onDiscard}
-              className={`${actionButtonClassName} bg-[#fff5e8] text-[#d99132] hover:-translate-y-0.5`}
-            >
-              폐기
-            </button>
-          ) : null}
-          {actions.onDelete ? (
-            <button
-              type="button"
-              onClick={actions.onDelete}
-              className={`${actionButtonClassName} bg-[#fff3f3] text-[var(--color-today)] hover:-translate-y-0.5`}
-            >
-              삭제
-            </button>
-          ) : null}
+              수정
+            </Link>
+            {actions.onConsume ? (
+              <button
+                type="button"
+                onClick={actions.onConsume}
+                className={`${actionButtonClassName} bg-[#effbf6] text-[var(--color-fresh)] hover:-translate-y-0.5`}
+              >
+                소비완료
+              </button>
+            ) : null}
+            {actions.onDiscard ? (
+              <button
+                type="button"
+                onClick={actions.onDiscard}
+                className={`${actionButtonClassName} bg-[#fff5e8] text-[#d99132] hover:-translate-y-0.5`}
+              >
+                폐기
+              </button>
+            ) : null}
+            {actions.onDelete ? (
+              <button
+                type="button"
+                onClick={actions.onDelete}
+                className={`${actionButtonClassName} bg-[#fff3f3] text-[var(--color-today)] hover:-translate-y-0.5`}
+              >
+                삭제
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

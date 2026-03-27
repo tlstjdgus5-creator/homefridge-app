@@ -182,13 +182,6 @@ export function FoodsPageClient() {
               ? "폐기 기록을 남기고 현재 식품 목록에서는 제거합니다."
               : "소비완료 처리하면 현재 목록에서 제거됩니다."
         }
-        confirmLabel={
-          dialogState?.type === "delete"
-            ? "삭제"
-            : dialogState?.type === "discard"
-              ? "폐기"
-              : "완료"
-        }
         tone={
           dialogState?.type === "delete" || dialogState?.type === "discard"
             ? "danger"

@@ -382,13 +382,14 @@ export function FoodForm({ mode, initialFood }: FoodFormProps) {
       </form>
       <ConfirmationDialog
         open={isConfirmOpen}
-        title={mode === "create" ? "이 식품을 저장할까요?" : "수정 내용을 저장할까요?"}
+        title={
+          mode === "create" ? "이 식품을 저장할까요?" : "수정한 내용을 저장할까요?"
+        }
         description={
           mode === "create"
             ? "입력한 식품 정보를 냉장고 목록에 추가합니다."
             : "변경한 식품 정보를 현재 목록에 반영합니다."
         }
-        confirmLabel="저장"
         onCancel={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmSave}
         isConfirming={isSaving}

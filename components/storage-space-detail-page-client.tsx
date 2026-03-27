@@ -32,6 +32,9 @@ export function StorageSpaceDetailPageClient({
   const [message, setMessage] = useState("");
   const [isActionPending, setIsActionPending] = useState(false);
   const storageSpace = storageSpaces.find((space) => space.id === storageSpaceId);
+  const otherStorageSpaces = storageSpaces.filter(
+    (space) => space.id !== storageSpaceId,
+  );
   const filteredFoods = getSortedFoodsByUrgency(
     foods.filter((food) => food.storageSpaceId === storageSpaceId),
   );
@@ -159,6 +162,30 @@ export function StorageSpaceDetailPageClient({
         )}
       </section>
 
+      <section className="space-y-3">
+        <SectionHeader
+          title="다른 칸 보기"
+          subtitle="다른 보관공간도 바로 이동해서 확인할 수 있어요"
+        />
+        {otherStorageSpaces.length > 0 ? (
+          <div className="flex flex-wrap gap-2.5">
+            {otherStorageSpaces.map((space) => (
+              <Link
+                key={space.id}
+                href={`/storage-spaces/${space.id}`}
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--color-mint-deep)] shadow-[var(--shadow-card)] transition active:scale-[0.98]"
+              >
+                {space.name}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-[var(--color-line)] bg-[var(--color-surface-soft)] px-4 py-5 text-sm text-[var(--color-muted)]">
+            다른 보관공간이 아직 없어요.
+          </div>
+        )}
+      </section>
+
       <FixedBottomActionBar>
         <div className="space-y-2.5">
           <Link
@@ -197,13 +224,6 @@ export function StorageSpaceDetailPageClient({
             : dialogState?.type === "discard"
               ? "폐기 기록을 남기고 현재 식품 목록에서는 제거합니다."
               : "소비완료 처리하면 현재 목록에서 제거됩니다."
-        }
-        confirmLabel={
-          dialogState?.type === "delete"
-            ? "삭제"
-            : dialogState?.type === "discard"
-              ? "폐기"
-              : "완료"
         }
         tone={
           dialogState?.type === "delete" || dialogState?.type === "discard"

@@ -292,10 +292,10 @@ export function StorageSpacesPageClient() {
         open={dialogState !== null}
         title={
           dialogState?.type === "create"
-            ? "이 공간을 저장할까요?"
+            ? "이 보관공간을 추가할까요?"
             : dialogState?.type === "update"
-              ? "이 공간 이름을 수정할까요?"
-              : "이 공간을 삭제할까요?"
+              ? "보관공간 정보를 수정할까요?"
+              : "이 보관공간을 삭제할까요?"
         }
         description={
           dialogState?.type === "create"
@@ -303,13 +303,6 @@ export function StorageSpacesPageClient() {
             : dialogState?.type === "update"
               ? "변경한 공간 이름을 현재 목록에 반영합니다."
               : "삭제하면 공간 목록에서 바로 사라집니다."
-        }
-        confirmLabel={
-          dialogState?.type === "delete"
-            ? "삭제"
-            : dialogState?.type === "update"
-              ? "수정"
-              : "저장"
         }
         tone={dialogState?.type === "delete" ? "danger" : "mint"}
         onCancel={() => setDialogState(null)}
