@@ -23,6 +23,9 @@ const statusClassName = {
     "border border-[#d9e2ec] bg-[#f3f6fa] text-[var(--color-expired)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]",
 };
 
+const actionButtonClassName =
+  "inline-flex min-h-10 min-w-[84px] items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition active:scale-95";
+
 export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
   const status = getFoodStatus(food);
   const daysUntilExpiry = getDaysUntilExpiry(food.expiryDate);
@@ -63,10 +66,12 @@ export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
             : `${daysUntilExpiry}일 남았어요`}
       </p>
       {actions ? (
-        <div className="mt-5 flex flex-wrap gap-2.5">
+        <div className="mt-5 overflow-x-auto">
+          {/* 액션은 한 줄로 고정해 터치 위치를 예측하기 쉽게 유지합니다. */}
+          <div className="flex min-w-max items-center gap-2.5">
           <Link
             href={`/foods/${food.id}/edit`}
-            className="inline-flex min-w-[78px] items-center justify-center rounded-full bg-[var(--color-bg-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-mint-deep)] hover:-translate-y-0.5"
+            className={`${actionButtonClassName} bg-[var(--color-bg-strong)] text-[var(--color-mint-deep)] hover:-translate-y-0.5`}
           >
             수정
           </Link>
@@ -74,29 +79,30 @@ export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
             <button
               type="button"
               onClick={actions.onConsume}
-              className="inline-flex min-w-[78px] items-center justify-center rounded-full bg-[#effbf6] px-4 py-2.5 text-sm font-semibold text-[var(--color-fresh)] hover:-translate-y-0.5"
+              className={`${actionButtonClassName} bg-[#effbf6] text-[var(--color-fresh)] hover:-translate-y-0.5`}
             >
               소비완료
-            </button>
-          ) : null}
-          {actions.onDelete ? (
-            <button
-              type="button"
-              onClick={actions.onDelete}
-              className="inline-flex min-w-[78px] items-center justify-center rounded-full bg-[#fff3f3] px-4 py-2.5 text-sm font-semibold text-[var(--color-today)] hover:-translate-y-0.5"
-            >
-              삭제
             </button>
           ) : null}
           {actions.onDiscard ? (
             <button
               type="button"
               onClick={actions.onDiscard}
-              className="inline-flex min-w-[78px] items-center justify-center rounded-full bg-[#f1f5f9] px-4 py-2.5 text-sm font-semibold text-[var(--color-expired)] hover:-translate-y-0.5"
+              className={`${actionButtonClassName} bg-[#fff5e8] text-[#d99132] hover:-translate-y-0.5`}
             >
               폐기
             </button>
           ) : null}
+          {actions.onDelete ? (
+            <button
+              type="button"
+              onClick={actions.onDelete}
+              className={`${actionButtonClassName} bg-[#fff3f3] text-[var(--color-today)] hover:-translate-y-0.5`}
+            >
+              삭제
+            </button>
+          ) : null}
+          </div>
         </div>
       ) : null}
     </article>

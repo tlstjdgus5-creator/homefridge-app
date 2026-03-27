@@ -39,7 +39,7 @@ export function BottomNav() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex min-h-[64px] flex-col items-center justify-center rounded-2xl border px-1.5 py-2 text-[11px] font-semibold leading-none ${
+                  className={`flex min-h-[64px] flex-col items-center justify-center rounded-2xl border px-2 py-2 text-[11px] font-semibold leading-none ${
                     isActive
                       ? item.href === "/foods/new"
                         ? "border-transparent bg-[var(--color-mint)] text-white shadow-sm"
@@ -48,10 +48,10 @@ export function BottomNav() {
                   }`}
                 >
                   <span
-                    className={`flex h-5 items-center justify-center ${
+                    className={`flex min-h-6 min-w-6 items-center justify-center ${
                       item.href === "/foods/new"
                         ? "text-[18px] font-semibold"
-                        : "text-[16px]"
+                        : "text-[17px]"
                     }`}
                   >
                     {item.icon}

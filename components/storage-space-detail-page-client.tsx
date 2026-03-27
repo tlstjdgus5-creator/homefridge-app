@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
 import { FoodCard } from "@/components/food-card";
@@ -17,7 +16,6 @@ type StorageSpaceDetailPageClientProps = {
 export function StorageSpaceDetailPageClient({
   storageSpaceId,
 }: StorageSpaceDetailPageClientProps) {
-  const router = useRouter();
   const {
     foods,
     storageSpaces,
@@ -27,32 +25,16 @@ export function StorageSpaceDetailPageClient({
     isLoading,
     error,
   } = useFoodStore();
-  const swipeStateRef = useRef<{
-    startX: number;
-    startY: number;
-    isTracking: boolean;
-    isHorizontalSwipe: boolean;
-  } | null>(null);
   const [dialogState, setDialogState] = useState<{
     type: "delete" | "consume" | "discard";
     foodId: string;
   } | null>(null);
   const [message, setMessage] = useState("");
   const [isActionPending, setIsActionPending] = useState(false);
-  const currentStorageSpaceIndex = storageSpaces.findIndex(
-    (space) => space.id === storageSpaceId,
-  );
   const storageSpace = storageSpaces.find((space) => space.id === storageSpaceId);
   const filteredFoods = getSortedFoodsByUrgency(
     foods.filter((food) => food.storageSpaceId === storageSpaceId),
   );
-  const previousStorageSpace =
-    currentStorageSpaceIndex > 0 ? storageSpaces[currentStorageSpaceIndex - 1] : null;
-  const nextStorageSpace =
-    currentStorageSpaceIndex >= 0 &&
-    currentStorageSpaceIndex < storageSpaces.length - 1
-      ? storageSpaces[currentStorageSpaceIndex + 1]
-      : null;
 
   if (isLoading) {
     return (
@@ -99,67 +81,6 @@ export function StorageSpaceDetailPageClient({
     setMessage("");
   }
 
-  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "mouse") {
-      return;
-    }
-
-    swipeStateRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      isTracking: true,
-      isHorizontalSwipe: false,
-    };
-  }
-
-  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (!swipeStateRef.current?.isTracking) {
-      return;
-    }
-
-    const deltaX = event.clientX - swipeStateRef.current.startX;
-    const deltaY = event.clientY - swipeStateRef.current.startY;
-
-    // 세로 스크롤보다 가로 이동이 분명할 때만 스와이프로 간주합니다.
-    if (
-      !swipeStateRef.current.isHorizontalSwipe &&
-      Math.abs(deltaX) > 18 &&
-      Math.abs(deltaX) > Math.abs(deltaY) * 1.25
-    ) {
-      swipeStateRef.current.isHorizontalSwipe = true;
-    }
-
-    if (Math.abs(deltaY) > 24 && Math.abs(deltaY) > Math.abs(deltaX)) {
-      swipeStateRef.current.isTracking = false;
-    }
-  }
-
-  function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    if (!swipeStateRef.current) {
-      return;
-    }
-
-    const deltaX = event.clientX - swipeStateRef.current.startX;
-    const deltaY = event.clientY - swipeStateRef.current.startY;
-    const canNavigate =
-      swipeStateRef.current.isTracking &&
-      swipeStateRef.current.isHorizontalSwipe &&
-      Math.abs(deltaX) > 72 &&
-      Math.abs(deltaX) > Math.abs(deltaY) * 1.25;
-
-    if (canNavigate) {
-      if (deltaX < 0 && nextStorageSpace) {
-        router.push(`/storage-spaces/${nextStorageSpace.id}`);
-      }
-
-      if (deltaX > 0 && previousStorageSpace) {
-        router.push(`/storage-spaces/${previousStorageSpace.id}`);
-      }
-    }
-
-    swipeStateRef.current = null;
-  }
-
   if (!storageSpace) {
     return (
       <div className="space-y-6">
@@ -185,15 +106,7 @@ export function StorageSpaceDetailPageClient({
   }
 
   return (
-    <div
-      className="space-y-6 pb-72"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={() => {
-        swipeStateRef.current = null;
-      }}
-    >
+    <div className="space-y-6 pb-72">
       {isLoading ? (
         <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
           공간 식품 정보를 불러오는 중이에요.
@@ -216,10 +129,6 @@ export function StorageSpaceDetailPageClient({
         </h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
           이 공간에 등록된 식품 {filteredFoods.length}개를 모아봤어요.
-        </p>
-        <p className="mt-3 text-xs text-[var(--color-muted)]">
-          {previousStorageSpace ? `← ${previousStorageSpace.name}` : "첫 번째 공간"} ·{" "}
-          현재 공간 · {nextStorageSpace ? `${nextStorageSpace.name} →` : "마지막 공간"}
         </p>
       </section>
 

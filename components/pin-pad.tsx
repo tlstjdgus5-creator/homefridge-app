@@ -66,7 +66,7 @@ function PinPadButton({
   variant?: "number" | "action" | "ghost";
 }) {
   const baseClassName =
-    "flex h-16 w-16 items-center justify-center rounded-full text-lg font-semibold shadow-[var(--shadow-card)] transition active:scale-95 disabled:opacity-45";
+    "flex h-[68px] w-[68px] items-center justify-center rounded-full text-lg font-semibold shadow-[var(--shadow-card)] transition active:scale-95 disabled:opacity-45";
   const variantClassName =
     variant === "number"
       ? "border border-[var(--color-line)] bg-white text-[var(--color-ink)]"
