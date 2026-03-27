@@ -165,6 +165,23 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function logSupabaseActionError(params: {
+  action: string;
+  stage: string;
+  tables: string[];
+  details?: Record<string, unknown>;
+  error: unknown;
+}) {
+  console.error(`[food-store] ${params.action} failed`, {
+    action: params.action,
+    stage: params.stage,
+    tables: params.tables,
+    env: getSupabaseEnvDebugInfo(),
+    ...params.details,
+    error: params.error,
+  });
+}
+
 export function FoodStoreProvider({ children }: { children: ReactNode }) {
   const [foods, setFoods] = useState<Food[]>([]);
   const [storageSpaces, setStorageSpaces] = useState<StorageSpace[]>([]);
@@ -175,7 +192,12 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
   async function refreshData() {
     if (!hasSupabaseEnv()) {
-      console.error("refreshData missing env", getSupabaseEnvDebugInfo());
+      console.error("[food-store] refreshData missing env", {
+        action: "refreshData",
+        stage: "before_request",
+        tables: ["storage_spaces", "food_items", "discard_logs"],
+        env: getSupabaseEnvDebugInfo(),
+      });
       setError(
         "Supabase 환경변수가 설정되지 않았어요. Vercel 또는 .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY 값을 확인해주세요. 이전 키인 NEXT_PUBLIC_SUPABASE_ANON_KEY도 fallback으로 지원해요.",
       );
@@ -187,6 +209,11 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
     try {
       const client = getSupabaseClient();
+      console.log("[food-store] refreshData start", {
+        action: "refreshData",
+        stage: "query",
+        tables: ["storage_spaces", "food_items", "discard_logs"],
+      });
       const [storageSpacesResult, foodsResult, discardLogsResult] = await Promise.all([
         client
           .from("storage_spaces")
@@ -205,12 +232,44 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       ]);
 
       if (storageSpacesResult.error) {
+        logSupabaseActionError({
+          action: "refreshData",
+          stage: "storage_spaces.select",
+          tables: ["storage_spaces"],
+          details: {
+            failedTable: "storage_spaces",
+            query: "select id, name, created_at order by created_at asc",
+          },
+          error: storageSpacesResult.error,
+        });
         throw storageSpacesResult.error;
       }
       if (foodsResult.error) {
+        logSupabaseActionError({
+          action: "refreshData",
+          stage: "food_items.select",
+          tables: ["food_items"],
+          details: {
+            failedTable: "food_items",
+            query:
+              "select id, name, quantity, unit, expiry_date, storage_space_id, created_at order by created_at desc",
+          },
+          error: foodsResult.error,
+        });
         throw foodsResult.error;
       }
       if (discardLogsResult.error) {
+        logSupabaseActionError({
+          action: "refreshData",
+          stage: "discard_logs.select",
+          tables: ["discard_logs"],
+          details: {
+            failedTable: "discard_logs",
+            query:
+              "select id, food_name, quantity, unit, storage_space_id, storage_space_name, expiry_date, discarded_at, status_at_discard order by discarded_at desc",
+          },
+          error: discardLogsResult.error,
+        });
         throw discardLogsResult.error;
       }
 
@@ -225,8 +284,9 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       );
       setError("");
     } catch (nextError) {
-      console.error("refreshData error", {
-        env: getSupabaseEnvDebugInfo(),
+      logSupabaseActionError({
+        action: "refreshData",
+        stage: "catch",
         tables: ["storage_spaces", "food_items", "discard_logs"],
         error: nextError,
       });
@@ -276,15 +336,18 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true, data: newFood };
     } catch (nextError) {
-      console.error("addFood error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "food_items",
-        payload: {
-          name: input.name.trim(),
-          quantity: input.quantity,
-          unit: input.unit.trim(),
-          expiry_date: input.expiryDate,
-          storage_space_id: input.storageSpaceId,
+      logSupabaseActionError({
+        action: "addFood",
+        stage: "food_items.insert",
+        tables: ["food_items"],
+        details: {
+          payload: {
+            name: input.name.trim(),
+            quantity: input.quantity,
+            unit: input.unit.trim(),
+            expiry_date: input.expiryDate,
+            storage_space_id: input.storageSpaceId,
+          },
         },
         error: nextError,
       });
@@ -338,11 +401,14 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true, data: nextFood };
     } catch (nextError) {
-      console.error("updateFood error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "food_items",
-        foodId,
-        payload: updates,
+      logSupabaseActionError({
+        action: "updateFood",
+        stage: "food_items.update",
+        tables: ["food_items"],
+        details: {
+          foodId,
+          payload: updates,
+        },
         error: nextError,
       });
       const message = getErrorMessage(nextError, "식품 수정 중 문제가 생겼어요.");
@@ -367,10 +433,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true };
     } catch (nextError) {
-      console.error("removeFood error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "food_items",
-        foodId,
+      logSupabaseActionError({
+        action: "removeFood",
+        stage: "food_items.delete",
+        tables: ["food_items"],
+        details: {
+          foodId,
+        },
         error: nextError,
       });
       const message = getErrorMessage(nextError, "식품 삭제 중 문제가 생겼어요.");
@@ -417,9 +486,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
 
       return { ok: true };
     } catch (nextError) {
-      console.error("consumeFood error", {
-        env: getSupabaseEnvDebugInfo(),
-        foodId,
+      logSupabaseActionError({
+        action: "consumeFood",
+        stage: "removeFood delegation",
+        tables: ["food_items"],
+        details: {
+          foodId,
+        },
         error: nextError,
       });
       const message = getErrorMessage(
@@ -477,10 +550,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true };
     } catch (nextError) {
-      console.error("discardFood error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "discard_logs",
-        foodId,
+      logSupabaseActionError({
+        action: "discardFood",
+        stage: "discard_logs.insert",
+        tables: ["discard_logs", "food_items"],
+        details: {
+          foodId,
+        },
         error: nextError,
       });
       const message = getErrorMessage(nextError, "폐기 처리 중 문제가 생겼어요.");
@@ -509,10 +585,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true, data: newStorageSpace };
     } catch (nextError) {
-      console.error("addStorageSpace error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "storage_spaces",
-        payload: { name: input.name.trim() },
+      logSupabaseActionError({
+        action: "addStorageSpace",
+        stage: "storage_spaces.insert",
+        tables: ["storage_spaces"],
+        details: {
+          payload: { name: input.name.trim() },
+        },
         error: nextError,
       });
       const message = getErrorMessage(
@@ -552,11 +631,14 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true, data: nextStorageSpace };
     } catch (nextError) {
-      console.error("updateStorageSpace error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "storage_spaces",
-        storageSpaceId,
-        payload: updates,
+      logSupabaseActionError({
+        action: "updateStorageSpace",
+        stage: "storage_spaces.update",
+        tables: ["storage_spaces"],
+        details: {
+          storageSpaceId,
+          payload: updates,
+        },
         error: nextError,
       });
       const message = getErrorMessage(
@@ -595,10 +677,13 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
       setError("");
       return { ok: true };
     } catch (nextError) {
-      console.error("removeStorageSpace error", {
-        env: getSupabaseEnvDebugInfo(),
-        table: "storage_spaces",
-        storageSpaceId,
+      logSupabaseActionError({
+        action: "removeStorageSpace",
+        stage: "storage_spaces.delete",
+        tables: ["storage_spaces"],
+        details: {
+          storageSpaceId,
+        },
         error: nextError,
       });
       const message = getErrorMessage(

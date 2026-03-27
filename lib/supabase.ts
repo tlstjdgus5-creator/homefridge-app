@@ -40,6 +40,22 @@ type SupabaseEnvDebugInfo = {
   isUrlValid: boolean;
 };
 
+function getRequestUrl(input: RequestInfo | URL) {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.toString();
+  }
+
+  if ("url" in input && typeof input.url === "string") {
+    return input.url;
+  }
+
+  return String(input);
+}
+
 function getParsedSupabaseUrl() {
   if (!supabaseUrl) {
     return null;
@@ -92,7 +108,14 @@ export function getSupabaseClient() {
 
   if (!hasLoggedSupabaseEnv && typeof window !== "undefined") {
     console.log("[supabase] client env", {
-      ...envDebugInfo,
+      hasUrl: envDebugInfo.hasUrl,
+      hasPublishableDefaultKey: envDebugInfo.hasPublishableDefaultKey,
+      hasLegacyAnonKey: envDebugInfo.hasLegacyAnonKey,
+      clientKeySource: envDebugInfo.clientKeySource,
+      supabaseUrl,
+      urlHostname: envDebugInfo.urlHostname,
+      urlProtocol: envDebugInfo.urlProtocol,
+      isUrlValid: envDebugInfo.isUrlValid,
       clientKeyPreview: `${supabaseClientKey.slice(0, 12)}...`,
     });
     hasLoggedSupabaseEnv = true;
@@ -110,12 +133,14 @@ export function getSupabaseClient() {
         },
         global: {
           fetch: async (input, init) => {
+            const requestUrl = getRequestUrl(input);
             try {
               return await fetch(input, init);
             } catch (error) {
               console.error("[supabase] fetch failed", {
-                input: typeof input === "string" ? input : input.toString(),
+                requestUrl,
                 method: init?.method ?? "GET",
+                supabaseUrl,
                 env: getSupabaseEnvDebugInfo(),
                 error,
               });
