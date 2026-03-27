@@ -45,13 +45,20 @@ export default function RootLayout({
       lang="ko"
       className={`${notoSansKr.variable} ${gowunDodum.variable} h-full`}
     >
-      <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-ink)] antialiased">
+      <body className="min-h-full overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-ink)] antialiased">
         <AppPinGateShell>
           <FoodStoreProvider>
             <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white/75 shadow-[0_0_0_1px_rgba(148,163,184,0.08)] backdrop-blur">
-              <main className="flex-1 px-4 pb-28 pt-5">{children}</main>
-              <BottomNav />
+              <main
+                className="flex-1 px-4 pt-5"
+                style={{
+                  paddingBottom: "calc(var(--screen-bottom-offset) + 1rem)",
+                }}
+              >
+                {children}
+              </main>
             </div>
+            <BottomNav />
           </FoodStoreProvider>
         </AppPinGateShell>
       </body>

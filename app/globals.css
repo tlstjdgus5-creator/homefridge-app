@@ -16,6 +16,9 @@
   --color-expired: #94a0ad;
   --shadow-card: 0 8px 24px -14px rgba(32, 54, 45, 0.14);
   --shadow-card-strong: 0 12px 30px -16px rgba(32, 54, 45, 0.16);
+  --bottom-nav-height: 5.9rem;
+  --screen-bottom-offset: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  --action-bar-bottom: calc(var(--screen-bottom-offset) + 0.85rem);
 }
 
 @theme inline {

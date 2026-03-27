@@ -13,7 +13,7 @@ export function FixedBottomActionBar({
     <div
       className="fixed inset-x-0 z-30 mx-auto w-full max-w-md px-4"
       style={{
-        bottom: "calc(env(safe-area-inset-bottom) + 6.75rem)",
+        bottom: "var(--action-bar-bottom)",
       }}
     >
       {/* 콘텐츠가 버튼 뒤로 숨지지 않도록 각 화면 본문에 충분한 bottom padding을 함께 둡니다. */}
