@@ -20,14 +20,21 @@ type SupabaseDatabase = {
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabasePublishableDefaultKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+const supabaseLegacyAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseClientKey =
+  supabasePublishableDefaultKey ?? supabaseLegacyAnonKey;
 
 let browserClient: ReturnType<typeof createClient<SupabaseDatabase>> | null = null;
 let hasLoggedSupabaseEnv = false;
 
 type SupabaseEnvDebugInfo = {
   hasUrl: boolean;
-  hasAnonKey: boolean;
+  hasPublishableDefaultKey: boolean;
+  hasLegacyAnonKey: boolean;
+  hasClientKey: boolean;
+  clientKeySource: "publishable_default" | "anon_fallback" | "missing";
   urlHostname: string;
   urlProtocol: string;
   isUrlValid: boolean;
@@ -46,7 +53,7 @@ function getParsedSupabaseUrl() {
 }
 
 export function hasSupabaseEnv() {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+  return Boolean(supabaseUrl && supabaseClientKey);
 }
 
 export function getSupabaseEnvDebugInfo(): SupabaseEnvDebugInfo {
@@ -54,7 +61,14 @@ export function getSupabaseEnvDebugInfo(): SupabaseEnvDebugInfo {
 
   return {
     hasUrl: Boolean(supabaseUrl),
-    hasAnonKey: Boolean(supabaseAnonKey),
+    hasPublishableDefaultKey: Boolean(supabasePublishableDefaultKey),
+    hasLegacyAnonKey: Boolean(supabaseLegacyAnonKey),
+    hasClientKey: Boolean(supabaseClientKey),
+    clientKeySource: supabasePublishableDefaultKey
+      ? "publishable_default"
+      : supabaseLegacyAnonKey
+        ? "anon_fallback"
+        : "missing",
     urlHostname: parsedUrl?.hostname ?? "",
     urlProtocol: parsedUrl?.protocol ?? "",
     isUrlValid: Boolean(parsedUrl),
@@ -64,9 +78,9 @@ export function getSupabaseEnvDebugInfo(): SupabaseEnvDebugInfo {
 export function getSupabaseClient() {
   const envDebugInfo = getSupabaseEnvDebugInfo();
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseClientKey) {
     throw new Error(
-      "Supabase 환경변수가 비어 있어요. NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 값을 확인해주세요.",
+      "Supabase 환경변수가 비어 있어요. NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY 값을 확인해주세요. 이전 키인 NEXT_PUBLIC_SUPABASE_ANON_KEY도 fallback으로 지원해요.",
     );
   }
 
@@ -77,36 +91,40 @@ export function getSupabaseClient() {
   }
 
   if (!hasLoggedSupabaseEnv && typeof window !== "undefined") {
-    console.info("[supabase] client env", {
+    console.log("[supabase] client env", {
       ...envDebugInfo,
-      anonKeyPreview: `${supabaseAnonKey.slice(0, 12)}...`,
+      clientKeyPreview: `${supabaseClientKey.slice(0, 12)}...`,
     });
     hasLoggedSupabaseEnv = true;
   }
 
   if (!browserClient) {
-    browserClient = createClient<SupabaseDatabase>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-      global: {
-        fetch: async (input, init) => {
-          try {
-            return await fetch(input, init);
-          } catch (error) {
-            console.error("[supabase] fetch failed", {
-              input: typeof input === "string" ? input : input.toString(),
-              method: init?.method ?? "GET",
-              env: getSupabaseEnvDebugInfo(),
-              error,
-            });
-            throw error;
-          }
+    browserClient = createClient<SupabaseDatabase>(
+      supabaseUrl,
+      supabaseClientKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+        global: {
+          fetch: async (input, init) => {
+            try {
+              return await fetch(input, init);
+            } catch (error) {
+              console.error("[supabase] fetch failed", {
+                input: typeof input === "string" ? input : input.toString(),
+                method: init?.method ?? "GET",
+                env: getSupabaseEnvDebugInfo(),
+                error,
+              });
+              throw error;
+            }
+          },
         },
       },
-    });
+    );
   }
 
   return browserClient;

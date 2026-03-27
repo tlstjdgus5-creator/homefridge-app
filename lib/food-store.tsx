@@ -124,7 +124,7 @@ function getErrorMessage(error: unknown, fallback: string) {
     error instanceof TypeError &&
     /(load failed|fetch failed|network)/i.test(error.message)
   ) {
-    return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY와 네트워크 요청 상태를 확인해주세요.";
+    return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY와 네트워크 요청 상태를 확인해주세요. 이전 키인 NEXT_PUBLIC_SUPABASE_ANON_KEY도 fallback으로 지원해요.";
   }
 
   if (
@@ -140,7 +140,7 @@ function getErrorMessage(error: unknown, fallback: string) {
       code?: unknown;
     };
     if (/(load failed|fetch failed|network)/i.test(supabaseError.message)) {
-      return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY와 네트워크 요청 상태를 확인해주세요.";
+      return "Supabase 서버에 연결하지 못했어요. 배포 환경의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY와 네트워크 요청 상태를 확인해주세요. 이전 키인 NEXT_PUBLIC_SUPABASE_ANON_KEY도 fallback으로 지원해요.";
     }
     const details =
       typeof supabaseError.details === "string" && supabaseError.details
@@ -177,7 +177,7 @@ export function FoodStoreProvider({ children }: { children: ReactNode }) {
     if (!hasSupabaseEnv()) {
       console.error("refreshData missing env", getSupabaseEnvDebugInfo());
       setError(
-        "Supabase 환경변수가 설정되지 않았어요. Vercel 또는 .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 값을 확인해주세요.",
+        "Supabase 환경변수가 설정되지 않았어요. Vercel 또는 .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY 값을 확인해주세요. 이전 키인 NEXT_PUBLIC_SUPABASE_ANON_KEY도 fallback으로 지원해요.",
       );
       setIsLoading(false);
       return;
