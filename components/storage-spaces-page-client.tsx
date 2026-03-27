@@ -177,12 +177,12 @@ export function StorageSpacesPageClient() {
             return (
               <article
                 key={space.id}
-                className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-5 shadow-[var(--shadow-card)]"
+                className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 shadow-[var(--shadow-card)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     {editingStorageSpaceId === space.id ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         <input
                           value={editingName}
                           onChange={(event) => setEditingName(event.target.value)}
@@ -214,13 +214,13 @@ export function StorageSpacesPageClient() {
                         href={`/storage-spaces/${space.id}`}
                         className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-mint)]"
                       >
-                        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+                        <h2 className="text-base font-semibold text-[var(--color-ink)]">
                           {space.name}
                         </h2>
-                        <p className="mt-1 text-sm text-[var(--color-muted)]">
+                        <p className="mt-0.5 text-[13px] text-[var(--color-muted)]">
                           식품 {items.length}개
                         </p>
-                        <p className="mt-1 text-xs text-[var(--color-mint-deep)]">
+                        <p className="mt-1 text-[12px] text-[var(--color-mint-deep)]">
                           눌러서 이 공간 식품만 보기
                         </p>
                       </Link>
@@ -233,14 +233,14 @@ export function StorageSpacesPageClient() {
                 {editingStorageSpaceId === space.id ? null : (
                   <Link
                     href={`/storage-spaces/${space.id}`}
-                    className="mt-4 block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-mint)]"
+                    className="mt-3 block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-mint)]"
                   >
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {items.length > 0 ? (
                         items.map((food) => (
                           <span
                             key={food.id}
-                            className="rounded-full border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-3 py-1 text-xs text-[var(--color-muted)]"
+                            className="rounded-full border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-2.5 py-1 text-[11px] text-[var(--color-muted)]"
                           >
                             {food.name}
                           </span>
@@ -251,14 +251,14 @@ export function StorageSpacesPageClient() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-4 text-sm text-[var(--color-muted)]">
+                    <p className="mt-3 text-[13px] text-[var(--color-muted)]">
                       {mostUrgentFood
                         ? `가장 임박한 식품: ${mostUrgentFood.name}`
                         : "보관 중인 식품이 없어요."}
                     </p>
                   </Link>
                 )}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-3 flex gap-2">
                   <button
                     type="button"
                     onClick={() => startEditing(space.id, space.name)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Lock, Settings, ShieldCheck } from "lucide-react";
 import { useAppPinAccess } from "@/components/app-pin-gate";
 import { PinDots, PinPad } from "@/components/pin-pad";
 
@@ -56,7 +57,12 @@ export function SettingsPageClient() {
   return (
     <div className="space-y-6 pb-32">
       <section className="rounded-[28px] bg-[linear-gradient(135deg,#eef9f4_0%,#f7fffc_55%,#fffaf1_100%)] px-5 py-6 shadow-[var(--shadow-card)]">
-        <p className="text-sm font-medium text-[var(--color-mint-deep)]">설정</p>
+        <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-mint-deep)]">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[var(--color-mint-deep)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+            <Settings size={18} strokeWidth={2} />
+          </span>
+          설정
+        </p>
         <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
           PIN 관리
         </h1>
@@ -173,15 +179,17 @@ export function SettingsPageClient() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-2xl bg-[var(--color-mint)] px-4 py-3 text-sm font-semibold text-white shadow-[var(--shadow-card)] disabled:opacity-70"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-mint)] px-4 py-3 text-sm font-semibold text-white shadow-[var(--shadow-card)] disabled:opacity-70"
             >
+              <ShieldCheck size={18} strokeWidth={2} />
               {isSubmitting ? "변경 중..." : "PIN 변경"}
             </button>
             <button
               type="button"
               onClick={lockApp}
-              className="rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-muted)]"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-muted)]"
             >
+              <Lock size={18} strokeWidth={2} />
               다시 잠그기
             </button>
           </div>

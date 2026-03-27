@@ -2,16 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  Apple,
+  Clock3,
+  House,
+  LayoutGrid,
+  Plus,
+  Settings,
+  Sparkles,
+} from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "홈", icon: "⌂" },
-  { href: "/foods", label: "식품", icon: "▦" },
-  { href: "/foods/new", label: "추가", icon: "+" },
-  { href: "/expiring", label: "임박", icon: "◔" },
-  { href: "/recipes", label: "레시피", icon: "✦" },
-  { href: "/storage-spaces", label: "공간", icon: "▤" },
-  { href: "/settings", label: "설정", icon: "⚙" },
-];
+  { href: "/", label: "홈", icon: House },
+  { href: "/foods", label: "식품", icon: Apple },
+  { href: "/foods/new", label: "추가", icon: Plus },
+  { href: "/expiring", label: "임박", icon: Clock3 },
+  { href: "/recipes", label: "레시피", icon: Sparkles },
+  { href: "/storage-spaces", label: "공간", icon: LayoutGrid },
+  { href: "/settings", label: "설정", icon: Settings },
+] satisfies Array<{ href: string; label: string; icon: LucideIcon }>;
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -29,6 +39,7 @@ export function BottomNav() {
       >
         <ul className="grid grid-cols-7 gap-2">
           {navItems.map((item) => {
+            const Icon = item.icon;
             const isActive =
               item.href === "/"
                 ? normalizedPathname === item.href
@@ -44,17 +55,21 @@ export function BottomNav() {
                       ? item.href === "/foods/new"
                         ? "border-transparent bg-[var(--color-mint)] text-white shadow-sm"
                         : "border-[var(--color-line)] bg-[var(--color-surface-soft)] text-[var(--color-mint-deep)] shadow-sm"
-                      : "border-transparent text-[var(--color-muted)] hover:border-[var(--color-line)] hover:bg-[var(--color-surface-soft)]"
+                      : "border-transparent text-[var(--color-muted)] hover:border-[var(--color-line)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-mint-deep)]"
                   }`}
                 >
                   <span
-                    className={`flex min-h-6 min-w-6 items-center justify-center ${
-                      item.href === "/foods/new"
-                        ? "text-[18px] font-semibold"
-                        : "text-[17px]"
+                    className={`flex min-h-7 min-w-7 items-center justify-center rounded-full ${
+                      isActive && item.href !== "/foods/new"
+                        ? "bg-white/80 text-[var(--color-mint-deep)]"
+                        : ""
                     }`}
                   >
-                    {item.icon}
+                    <Icon
+                      size={20}
+                      strokeWidth={2}
+                      className={isActive && item.href === "/foods/new" ? "text-white" : ""}
+                    />
                   </span>
                   <span className="mt-1.5 whitespace-nowrap">{item.label}</span>
                 </Link>

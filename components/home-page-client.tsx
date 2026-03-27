@@ -131,14 +131,14 @@ export function HomePageClient() {
               <Link
                 key={space.id}
                 href={`/storage-spaces/${space.id}`}
-                className="block rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-5 shadow-[var(--shadow-card)] outline-none hover:border-[#d5e4dd] hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-[var(--color-mint)]"
+                className="block rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 shadow-[var(--shadow-card)] outline-none hover:border-[#d5e4dd] hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-[var(--color-mint)]"
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--color-ink)]">
                       {space.name}
                     </h3>
-                    <p className="mt-1 text-sm text-[var(--color-muted)]">
+                    <p className="mt-0.5 text-[13px] text-[var(--color-muted)]">
                       {space.count}개 식품 보관 중
                     </p>
                   </div>
@@ -146,7 +146,7 @@ export function HomePageClient() {
                     {space.count}
                   </span>
                 </div>
-                <p className="mt-3 text-xs text-[var(--color-muted)]">
+                <p className="mt-2.5 text-[12px] text-[var(--color-muted)]">
                   {mostUrgent
                     ? `가장 임박한 식품: ${mostUrgent.name}`
                     : "보관 중인 식품이 없어요."}

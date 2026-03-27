@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { FixedBottomActionBar } from "@/components/fixed-bottom-action-bar";
+import { FoodActionSheet } from "@/components/food-action-sheet";
 import { FoodCard } from "@/components/food-card";
 import { SectionHeader } from "@/components/section-header";
 import { getSortedFoodsByUrgency } from "@/lib/food-status";
 import { useFoodStore } from "@/lib/food-store";
+import type { Food } from "@/lib/mock-data";
 
 type StorageSpaceDetailPageClientProps = {
   storageSpaceId: string;
@@ -29,6 +31,7 @@ export function StorageSpaceDetailPageClient({
     type: "delete" | "consume" | "discard";
     foodId: string;
   } | null>(null);
+  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [message, setMessage] = useState("");
   const [isActionPending, setIsActionPending] = useState(false);
   const storageSpace = storageSpaces.find((space) => space.id === storageSpaceId);
@@ -48,14 +51,17 @@ export function StorageSpaceDetailPageClient({
   }
 
   function handleDelete(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "delete", foodId });
   }
 
   function handleConsume(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "consume", foodId });
   }
 
   function handleDiscard(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "discard", foodId });
   }
 
@@ -120,17 +126,17 @@ export function StorageSpaceDetailPageClient({
           {message || error}
         </div>
       ) : null}
-      <section className="rounded-[28px] bg-[linear-gradient(135deg,#eefaf5_0%,#ffffff_60%,#e5f6ef_100%)] px-5 py-6 shadow-[var(--shadow-card)]">
+      <section className="rounded-[28px] bg-[linear-gradient(135deg,#eefaf5_0%,#ffffff_60%,#e5f6ef_100%)] px-4 py-5 shadow-[var(--shadow-card)]">
         <Link
           href="/storage-spaces"
           className="text-sm font-medium text-[var(--color-mint-deep)]"
         >
           ← 공간 목록으로
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold text-[var(--color-ink)]">
+        <h1 className="mt-2.5 text-[30px] font-semibold tracking-tight text-[var(--color-ink)]">
           {storageSpace.name}
         </h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">
+        <p className="mt-1.5 text-sm text-[var(--color-muted)]">
           이 공간에 등록된 식품 {filteredFoods.length}개를 모아봤어요.
         </p>
       </section>
@@ -141,17 +147,14 @@ export function StorageSpaceDetailPageClient({
           subtitle="이 공간에 있는 식품만 따로 확인할 수 있어요"
         />
         {filteredFoods.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {filteredFoods.map((food) => (
               <FoodCard
                 key={food.id}
                 food={food}
                 storageSpaceName={storageSpace.name}
-                actions={{
-                  onDelete: () => handleDelete(food.id),
-                  onConsume: () => handleConsume(food.id),
-                  onDiscard: () => handleDiscard(food.id),
-                }}
+                onClick={() => setSelectedFood(food)}
+                compact
               />
             ))}
           </div>
@@ -161,6 +164,27 @@ export function StorageSpaceDetailPageClient({
           </div>
         )}
       </section>
+      <FoodActionSheet
+        food={selectedFood}
+        storageSpaceName={storageSpace.name}
+        open={selectedFood !== null}
+        onClose={() => setSelectedFood(null)}
+        onConsume={() => {
+          if (selectedFood) {
+            handleConsume(selectedFood.id);
+          }
+        }}
+        onDiscard={() => {
+          if (selectedFood) {
+            handleDiscard(selectedFood.id);
+          }
+        }}
+        onDelete={() => {
+          if (selectedFood) {
+            handleDelete(selectedFood.id);
+          }
+        }}
+      />
 
       <section className="space-y-3">
         <SectionHeader

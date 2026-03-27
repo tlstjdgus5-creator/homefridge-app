@@ -1,15 +1,11 @@
-import Link from "next/link";
 import type { Food } from "@/lib/mock-data";
 import { getDaysUntilExpiry, getFoodStatus, getFoodStatusLabel } from "@/lib/food-status";
 
 type FoodCardProps = {
   food: Food;
   storageSpaceName: string;
-  actions?: {
-    onDelete?: () => void;
-    onConsume?: () => void;
-    onDiscard?: () => void;
-  };
+  onClick?: () => void;
+  compact?: boolean;
 };
 
 const statusClassName = {
@@ -23,19 +19,30 @@ const statusClassName = {
     "border border-[#d9e2ec] bg-[#f3f6fa] text-[var(--color-expired)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]",
 };
 
-const actionButtonClassName =
-  "inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl px-1.5 py-2.5 text-sm font-medium leading-5 tracking-normal shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition active:scale-95";
-
-export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
+export function FoodCard({
+  food,
+  storageSpaceName,
+  onClick,
+  compact = false,
+}: FoodCardProps) {
   const status = getFoodStatus(food);
   const daysUntilExpiry = getDaysUntilExpiry(food.expiryDate);
-
-  return (
-    <article className="rounded-[28px] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-4 shadow-[var(--shadow-card-strong)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]">
+  const remainingText =
+    daysUntilExpiry < 0
+      ? `${Math.abs(daysUntilExpiry)}일 지났어요`
+      : daysUntilExpiry === 0
+        ? "오늘까지예요"
+        : `${daysUntilExpiry}일 남았어요`;
+  const cardBody = (
+    <>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold tracking-tight text-[var(--color-ink)]">
+            <h3
+              className={`font-semibold tracking-tight text-[var(--color-ink)] ${
+                compact ? "text-base" : "text-lg"
+              }`}
+            >
               {food.name}
             </h3>
             <span
@@ -44,67 +51,74 @@ export function FoodCard({ food, storageSpaceName, actions }: FoodCardProps) {
               {getFoodStatusLabel(status)}
             </span>
           </div>
-          <p className="mt-2 text-sm font-medium text-[var(--color-muted)]">
+          <p
+            className={`font-medium text-[var(--color-muted)] ${
+              compact ? "mt-1.5 text-[13px]" : "mt-2 text-sm"
+            }`}
+          >
             {food.quantity}
             {food.unit} · {storageSpaceName}
           </p>
+          <p
+            className={`font-medium ${
+              status === "expired"
+                ? "text-[var(--color-today)]"
+                : status === "today"
+                  ? "text-[var(--color-today)]"
+                  : status === "soon"
+                    ? "text-[var(--color-soon)]"
+                    : "text-[var(--color-muted)]"
+            } ${compact ? "mt-1 text-[12px] leading-4" : "mt-1.5 text-[13px] leading-5"}`}
+          >
+            {remainingText}
+          </p>
         </div>
-        <div className="rounded-3xl bg-[var(--color-surface-soft)] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+        <div
+          className={`rounded-3xl bg-[var(--color-surface-soft)] text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] ${
+            compact ? "px-3 py-2" : "px-3.5 py-2.5"
+          }`}
+        >
           <p className="text-[11px] font-medium tracking-[0.02em] text-[var(--color-muted)]">
             소비기한
           </p>
-          <p className="mt-1 text-lg font-semibold tracking-tight text-[var(--color-ink)]">
+          <p
+            className={`mt-1 font-semibold tracking-tight text-[var(--color-ink)] ${
+              compact ? "text-base" : "text-lg"
+            }`}
+          >
             {food.expiryDate}
           </p>
         </div>
       </div>
-      <p className="mt-4 text-sm text-[var(--color-muted)]">
-        {daysUntilExpiry < 0
-          ? `${Math.abs(daysUntilExpiry)}일 지났어요`
-          : daysUntilExpiry === 0
-            ? "오늘까지예요"
-            : `${daysUntilExpiry}일 남았어요`}
-      </p>
-      {actions ? (
-        <div className="mt-5">
-          {/* 카드 폭 안에서 4개 액션을 같은 비율로 배치해 옆으로 넘치지 않게 유지합니다. */}
-          <div className="grid grid-cols-4 gap-1.5">
-            <Link
-              href={`/foods/${food.id}/edit`}
-              className={`${actionButtonClassName} bg-[var(--color-bg-strong)] text-[var(--color-mint-deep)] hover:-translate-y-0.5`}
-            >
-              수정
-            </Link>
-            {actions.onConsume ? (
-              <button
-                type="button"
-                onClick={actions.onConsume}
-                className={`${actionButtonClassName} bg-[#effbf6] text-[var(--color-fresh)] hover:-translate-y-0.5`}
-              >
-                소비완료
-              </button>
-            ) : null}
-            {actions.onDiscard ? (
-              <button
-                type="button"
-                onClick={actions.onDiscard}
-                className={`${actionButtonClassName} bg-[#fff5e8] text-[#d99132] hover:-translate-y-0.5`}
-              >
-                폐기
-              </button>
-            ) : null}
-            {actions.onDelete ? (
-              <button
-                type="button"
-                onClick={actions.onDelete}
-                className={`${actionButtonClassName} bg-[#fff3f3] text-[var(--color-today)] hover:-translate-y-0.5`}
-              >
-                삭제
-              </button>
-            ) : null}
-          </div>
-        </div>
+      {onClick && !compact ? (
+        <p className="mt-2.5 text-xs font-medium text-[var(--color-mint-deep)]">
+          탭해서 수정, 소비완료, 폐기, 삭제를 선택할 수 있어요.
+        </p>
       ) : null}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`block w-full rounded-[28px] border border-[var(--color-line)] bg-[var(--color-surface)] text-left shadow-[var(--shadow-card-strong)] transition hover:-translate-y-0.5 hover:border-[#d5e4dd] hover:shadow-[var(--shadow-card)] active:scale-[0.99] ${
+          compact ? "px-4 py-2.5" : "px-4 py-3"
+        }`}
+      >
+        {cardBody}
+      </button>
+    );
+  }
+
+  return (
+    <article
+      className={`rounded-[28px] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-card-strong)] ${
+        compact ? "px-4 py-2.5" : "px-4 py-3"
+      }`}
+    >
+      {cardBody}
     </article>
   );
 }

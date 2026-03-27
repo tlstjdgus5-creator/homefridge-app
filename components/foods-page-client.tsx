@@ -2,16 +2,29 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ArrowDownUp, PackageOpen, Plus, Search } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { FoodActionSheet } from "@/components/food-action-sheet";
 import { FoodCard } from "@/components/food-card";
-import { SectionHeader } from "@/components/section-header";
-import { getFoodStatus, getSortedFoodsByUrgency } from "@/lib/food-status";
+import {
+  getDaysUntilExpiry,
+  getSortedFoodsByUrgency,
+} from "@/lib/food-status";
 import { useFoodStore } from "@/lib/food-store";
+import type { Food } from "@/lib/mock-data";
 
 const filters = [
   { id: "all", label: "전체" },
-  { id: "expiring", label: "임박" },
+  { id: "today", label: "오늘" },
+  { id: "within3", label: "3일 이내" },
+  { id: "within7", label: "7일 이내" },
   { id: "expired", label: "만료" },
+] as const;
+
+const sorts = [
+  { id: "expiry", label: "소비기한순" },
+  { id: "name", label: "이름순" },
+  { id: "recent", label: "최근 추가순" },
 ] as const;
 
 export function FoodsPageClient() {
@@ -26,22 +39,27 @@ export function FoodsPageClient() {
   } = useFoodStore();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]["id"]>("all");
+  const [sort, setSort] = useState<(typeof sorts)[number]["id"]>("expiry");
   const [message, setMessage] = useState("");
   const [dialogState, setDialogState] = useState<{
     type: "delete" | "consume" | "discard";
     foodId: string;
   } | null>(null);
+  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
 
   function handleDelete(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "delete", foodId });
   }
 
   function handleConsume(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "consume", foodId });
   }
 
   function handleDiscard(foodId: string) {
+    setSelectedFood(null);
     setDialogState({ type: "discard", foodId });
   }
 
@@ -70,18 +88,32 @@ export function FoodsPageClient() {
     setMessage("");
   }
 
-  const filteredFoods = getSortedFoodsByUrgency(foods).filter((food) => {
+  const filteredFoods = foods.filter((food) => {
     const matchesQuery = food.name.toLowerCase().includes(query.toLowerCase());
-    const status = getFoodStatus(food);
+    const daysUntilExpiry = getDaysUntilExpiry(food.expiryDate);
     const matchesFilter =
       filter === "all"
         ? true
-        : filter === "expiring"
-          ? status === "today" || status === "soon"
-          : status === "expired";
+        : filter === "today"
+          ? daysUntilExpiry === 0
+          : filter === "within3"
+            ? daysUntilExpiry > 0 && daysUntilExpiry <= 3
+            : filter === "within7"
+              ? daysUntilExpiry > 3 && daysUntilExpiry <= 7
+              : daysUntilExpiry < 0;
 
     return matchesQuery && matchesFilter;
   });
+
+  const sortedFoods =
+    sort === "expiry"
+      ? getSortedFoodsByUrgency(filteredFoods)
+      : sort === "name"
+        ? [...filteredFoods].sort((a, b) =>
+            a.name.localeCompare(b.name, "ko-KR"),
+          )
+        : [...filteredFoods];
+
   return (
     <div className="space-y-6">
       {isLoading ? (
@@ -94,42 +126,67 @@ export function FoodsPageClient() {
           {message || error}
         </div>
       ) : null}
-      <section className="rounded-[28px] bg-[linear-gradient(135deg,#eefaf5_0%,#ffffff_60%,#e5f6ef_100%)] px-5 py-6 shadow-[var(--shadow-card)]">
-        <p className="text-sm font-medium text-[var(--color-mint-deep)]">
-          식품 목록
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
-          검색과 필터로 냉장고를 빠르게 정리해보세요
-        </h1>
-        <Link
-          href="/foods/new"
-          className="mt-4 inline-flex rounded-full bg-[var(--color-mint)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-card)]"
-        >
-          식품 추가
-        </Link>
-      </section>
+      <section className="sticky top-3 z-20 space-y-3 rounded-[28px] border border-white/70 bg-white/88 px-4 py-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-mint-deep)]">
+              <PackageOpen size={18} strokeWidth={2} />
+              전체 식품 관리
+            </p>
+            <h1 className="mt-1 text-xl font-semibold text-[var(--color-ink)]">
+              식품 {sortedFoods.length}개
+            </h1>
+          </div>
+          <Link
+            href="/foods/new"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--color-mint)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-card)]"
+          >
+            <Plus size={16} strokeWidth={2.25} />
+            추가
+          </Link>
+        </div>
 
-      <section className="space-y-3">
-        <SectionHeader
-          title="식품 검색"
-          subtitle="이름으로 찾고 임박 상태로 걸러볼 수 있어요"
-        />
-        <div className="rounded-3xl border border-[var(--color-line)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)]">
+        <label className="flex items-center gap-2 rounded-2xl bg-[var(--color-surface-soft)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+          <Search size={18} strokeWidth={2} className="text-[var(--color-muted)]" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="예: 우유, 달걀, 시금치"
-            className="w-full rounded-2xl bg-[var(--color-surface-soft)] px-4 py-3 text-sm text-[var(--color-ink)] outline-none ring-0 placeholder:text-[var(--color-muted)]"
+            placeholder="식품명으로 검색"
+            className="w-full bg-transparent text-sm text-[var(--color-ink)] outline-none placeholder:text-[var(--color-muted)]"
           />
-          <div className="mt-3 flex gap-2">
+        </label>
+
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap gap-2">
             {filters.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setFilter(item.id)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                className={`rounded-full px-3.5 py-2 text-sm font-medium transition ${
                   filter === item.id
-                    ? "bg-[var(--color-mint)] text-white"
+                    ? "bg-[var(--color-mint)] text-white shadow-sm"
+                    : "bg-[var(--color-surface-soft)] text-[var(--color-muted)]"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-muted)]">
+              <ArrowDownUp size={14} strokeWidth={2} />
+              정렬
+            </span>
+            {sorts.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSort(item.id)}
+                className={`rounded-full px-3.5 py-2 text-sm font-medium transition ${
+                  sort === item.id
+                    ? "border border-[var(--color-line)] bg-white text-[var(--color-mint-deep)] shadow-sm"
                     : "bg-[var(--color-surface-soft)] text-[var(--color-muted)]"
                 }`}
               >
@@ -141,22 +198,15 @@ export function FoodsPageClient() {
       </section>
 
       <section className="space-y-3">
-        <SectionHeader
-          title={`식품 ${filteredFoods.length}개`}
-          subtitle="이름, 수량, 소비기한, 상태, 보관공간을 카드에 담았어요"
-        />
-        {filteredFoods.length > 0 ? (
-          <div className="space-y-3">
-            {filteredFoods.map((food) => (
+        {sortedFoods.length > 0 ? (
+          <div className="space-y-2.5">
+            {sortedFoods.map((food) => (
               <FoodCard
                 key={food.id}
                 food={food}
                 storageSpaceName={getStorageSpaceName(food.storageSpaceId)}
-                actions={{
-                  onDelete: () => handleDelete(food.id),
-                  onConsume: () => handleConsume(food.id),
-                  onDiscard: () => handleDiscard(food.id),
-                }}
+                onClick={() => setSelectedFood(food)}
+                compact
               />
             ))}
           </div>
@@ -166,6 +216,29 @@ export function FoodsPageClient() {
           </div>
         )}
       </section>
+      <FoodActionSheet
+        food={selectedFood}
+        storageSpaceName={
+          selectedFood ? getStorageSpaceName(selectedFood.storageSpaceId) : ""
+        }
+        open={selectedFood !== null}
+        onClose={() => setSelectedFood(null)}
+        onConsume={() => {
+          if (selectedFood) {
+            handleConsume(selectedFood.id);
+          }
+        }}
+        onDiscard={() => {
+          if (selectedFood) {
+            handleDiscard(selectedFood.id);
+          }
+        }}
+        onDelete={() => {
+          if (selectedFood) {
+            handleDelete(selectedFood.id);
+          }
+        }}
+      />
       <ConfirmationDialog
         open={dialogState !== null}
         title={
